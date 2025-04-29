@@ -1,121 +1,104 @@
-# Namma Suraksha - Traffic Rules Awareness Platform
+# 🚨 NammaSuraksha - Crime Safety Analytics Platform
 
-![Project Logo](https://via.placeholder.com/150) <!-- Replace with actual logo -->
+![NammaSuraksha Logo](assets/namma-suraksha-logo.jpeg)
 
-Namma Suraksha is a comprehensive traffic rules awareness platform designed to educate and inform users about traffic regulations, safety measures, and best practices. The platform combines interactive learning modules, real-time traffic updates, and community engagement features to promote road safety awareness.
+## 📝 Problem Statement
 
-## 🚀 Features
+Cities in India are growing rapidly, and with this growth comes the challenge of ensuring citizen safety. Certain areas within cities are statistically more unsafe than others, and there's a need for a comprehensive solution to address these safety concerns. NammaSuraksha aims to provide a software solution that helps citizens stay safe through real-time crime data visualization, incident reporting, and safety resources.
 
-- **Interactive Learning Modules**
-  - Traffic rules tutorials
-  - Road sign recognition
-  - Safety guidelines
-  - Quiz-based learning
+## ✨ Features
 
-- **Real-time Traffic Updates**
-  - Live traffic conditions
-  - Accident-prone areas
-  - Road work alerts
-  - Weather conditions
+### 🗺️ Interactive Safety Map
+- Color-coded zones indicating safety levels (Red/Yellow/Green)
+- Real-time crime data visualization
+- Clickable areas for detailed crime statistics
+- Heatmap visualization of crime-prone areas
 
-- **Community Engagement**
-  - User forums
-  - Safety tips sharing
-  - Report incidents
-  - Community guidelines
+### 🆘 Emergency Features
+- Quick access to emergency contacts
+- SOS button for immediate assistance
+- Live location detection
+- Safety alerts for unsafe areas
 
-- **Analytics Dashboard**
-  - Traffic violation statistics
-  - Learning progress tracking
-  - Community engagement metrics
-  - Safety awareness trends
+### 📋 Incident Reporting
+- User-friendly form for reporting safety incidents
+- Location-based reporting (with map integration)
+- Multiple incident categories
+- Media upload support (images/videos)
+- Real-time status updates
+
+### 📚 Safety Resources
+- Emergency contact information
+- Safety tips and guidelines
+- Self-defense resources
+- Educational materials
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- React.js
-- Tailwind CSS
-- Chart.js
-- React Router
-- Leaflet Maps
-- Google Maps API
+| Layer     | Technology                  | Purpose                    |
+|-----------|----------------------------|----------------------------|
+| Frontend  | React.js + TailwindCSS     | Modern, responsive UI      |
+| Maps      | Leaflet.js                 | Interactive map visualization |
+| Backend   | Node.js + Express.js       | API and server management  |
+| Database  | MongoDB Atlas              | Secure data storage        |
+| Hosting   | Vercel (Frontend) + Render (Backend) | Scalable deployment |
 
-### Backend
-- Node.js
-- Express.js
-- MongoDB
-- SQLite3
-- Joi (Validation)
+## 🚀 Getting Started
 
-### Development Tools
-- Webpack
-- Babel
-- Nodemon
-- PostCSS
-- ESLint
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+- MongoDB Atlas account
 
-## 📦 Installation
+### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/priyanshu5ingh/IDEASHROOMS-NammaSuraksha.git
-   cd IDEASHROOMS-NammaSuraksha
-   ```
+1. Clone the repository
+    ```bash
+    git clone https://github.com/yourusername/namma-suraksha.git
+    cd namma-suraksha
+    ```
 
-2. **Install dependencies**
-   ```bash
-   # Install backend dependencies
-   npm install
+2. Install dependencies
+    ```bash
+    # Install frontend dependencies
+    cd frontend
+    npm install
 
-   # Install frontend dependencies
-   cd frontend
-   npm install
-   ```
+    # Install backend dependencies
+    cd ../backend
+    npm install
+    ```
 
-3. **Environment Setup**
-   Create a `.env` file in the root directory with the following variables:
-   ```
-   MONGODB_URI=your_mongodb_uri
-   GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-   PORT=3000
-   ```
+3. Set up environment variables
+    ```bash
+    # Create .env file in backend directory
+    cp .env.example .env
+    # Add your MongoDB URI and other configurations
+    ```
 
-4. **Start the development servers**
-   ```bash
-   # Start backend server
-   npm run dev
+4. Start the development servers
+    ```bash
+    # Start backend server
+    cd backend
+    npm run dev
 
-   # Start frontend server (in a new terminal)
-   cd frontend
-   npm start
-   ```
+    # Start frontend server
+    cd frontend
+    npm start
+    ```
 
-## 🚀 Deployment
+## 📊 Database Schema
 
-The application can be deployed using the following steps:
-
-1. Build the frontend:
-   ```bash
-   cd frontend
-   npm run build
-   ```
-
-2. Start the production server:
-   ```bash
-   npm start
-   ```
-
-## 📚 Project Structure
-
-```
-IDEASHROOMS-NammaSuraksha/
-├── backend/           # Backend server code
-├── frontend/          # Frontend React application
-│   ├── public/        # Static files
-│   └── src/           # React components and logic
-├── node_modules/      # Dependencies
-├── package.json       # Project configuration
-└── README.md          # Project documentation
+```json
+{
+  "crimeType": "string",
+  "description": "string",
+  "latitude": "number",
+  "longitude": "number",
+  "timestamp": "date",
+  "media": "array",
+  "status": "string"
+}
 ```
 
 ## 🤝 Contributing
@@ -132,17 +115,18 @@ We welcome contributions! Please follow these steps:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👥 Authors
-
-- Priyanshu Singh - [GitHub](https://github.com/priyanshu5ingh)
-
 ## 🙏 Acknowledgments
 
-- Thanks to all contributors who have helped shape this project
-- Special thanks to the open-source community for their invaluable tools and libraries
+- Leaflet.js for the mapping functionality
+- MongoDB Atlas for database hosting
+- Vercel and Render for hosting services
 
 ## 📞 Contact
 
 For any queries or support, please reach out to:
-- Email: [Your Email]
-- GitHub: [@priyanshu5ingh](https://github.com/priyanshu5ingh)
+- Email: [your-email@example.com]
+- Project Link: [https://github.com/yourusername/namma-suraksha]
+
+---
+
+Made with ❤️ for safer cities
