@@ -17,50 +17,152 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// User Registration
-router.post('/register', upload.single('photo'), async (req, res) => {
+// Registration route
+router.post('/register', async (req, res) => {
+  const { email, username, password, name, phone } = req.body;
+
+  // Validate required fields
+  if (!email || !username || !password || !name) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide all required fields: email, username, password, and name'
+    });
+  }
+
   try {
-    const { username, password, name, email, phone } = req.body;
-    const photo = req.file ? req.file.filename : null;
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = 'INSERT INTO users (username, password, name, email, phone, photo) VALUES (?, ?, ?, ?, ?, ?)';
-    db.run(sql, [username, hashedPassword, name, email, phone, photo], function(err) {
+    // Check if email already exists
+    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, row) => {
       if (err) {
-        if (err.message.includes('UNIQUE')) {
-          return res.status(400).json({ message: 'Username or email already exists' });
-        }
-        return res.status(500).json({ message: 'Error registering user', error: err.message });
+        console.error('Database error:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Registration failed. Please try again.'
+        });
       }
-      res.status(201).json({ message: 'User created successfully' });
+
+      if (row) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already registered'
+        });
+      }
+
+      // Check if username already exists
+      db.get('SELECT * FROM users WHERE username = ?', [username], async (err, row) => {
+        if (err) {
+          console.error('Database error:', err);
+          return res.status(500).json({
+            success: false,
+            message: 'Registration failed. Please try again.'
+          });
+        }
+
+        if (row) {
+          return res.status(400).json({
+            success: false,
+            message: 'Username already taken'
+          });
+        }
+
+        try {
+          // Hash password
+          const hashedPassword = await bcrypt.hash(password, 10);
+
+          // Insert new user
+          db.run(
+            'INSERT INTO users (email, username, password, name, phone) VALUES (?, ?, ?, ?, ?)',
+            [email, username, hashedPassword, name, phone || null],
+            function(err) {
+              if (err) {
+                console.error('Database error:', err);
+                return res.status(500).json({
+                  success: false,
+                  message: 'Registration failed. Please try again.'
+                });
+              }
+
+              res.json({
+                success: true,
+                message: 'Registration successful'
+              });
+            }
+          );
+        } catch (error) {
+          console.error('Registration error:', error);
+          res.status(500).json({
+            success: false,
+            message: 'Registration failed. Please try again.'
+          });
+        }
+      });
     });
   } catch (error) {
-    res.status(500).json({ message: 'Error registering user', error: error.message });
+    console.error('Registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Registration failed. Please try again.'
+    });
   }
 });
 
-// User Login
-router.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    db.get('SELECT * FROM users WHERE username = ? OR email = ?', [username, username], async (err, user) => {
-      if (err) return res.status(500).json({ message: 'Error logging in', error: err.message });
-      if (!user) return res.status(401).json({ message: 'Invalid username or password' });
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) return res.status(401).json({ message: 'Invalid username or password' });
-      const token = jwt.sign(
-        { userId: user.id },
-        process.env.JWT_SECRET || 'your_jwt_secret',
-        { expiresIn: '1h' }
-      );
-      res.json({ message: 'Login successful', token });
+// Login route
+router.post('/login', (req, res) => {
+  const { emailOrUsername, password } = req.body;
+
+  if (!emailOrUsername || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide both email/username and password'
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Error logging in', error: error.message });
   }
+
+  // Check if user exists by email or username
+  db.get(
+    'SELECT * FROM users WHERE email = ? OR username = ?',
+    [emailOrUsername, emailOrUsername],
+    async (err, user) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({
+          success: false,
+          message: 'Login failed. Please try again.'
+        });
+      }
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found. Please register first.'
+        });
+      }
+
+      try {
+        const validPassword = await bcrypt.compare(password, user.password);
+
+        if (!validPassword) {
+          return res.status(401).json({
+            success: false,
+            message: 'Invalid password'
+          });
+        }
+
+        // Send user data (excluding password)
+        const { password: _, ...userData } = user;
+        res.json({
+          success: true,
+          message: 'Login successful',
+          user: userData
+        });
+      } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Login failed. Please try again.'
+        });
+      }
+    }
+  );
 });
-
-
-
 
 // TEMPORARY: List all users (for debugging only)
 router.get('/all-users', (req, res) => {
@@ -69,8 +171,6 @@ router.get('/all-users', (req, res) => {
     res.json(rows);
   });
 });
-
-
 
 // Add to backend/routes/auth.js (for debugging only)
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import ReportCrime from "./pages/ReportCrime";
@@ -13,6 +13,11 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 function ProtectedApp() {
   const location = window.location.pathname;
   const isMapPage = location === '/map';
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <>
@@ -32,18 +37,13 @@ function ProtectedApp() {
 
 function App() {
   const { user } = useAuth();
+
   return (
     <Router>
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        {/* Protected routes */}
-        {user && (
-          <Route path="/*" element={<ProtectedApp />} />
-        )}
-        {/* Redirect to login if not logged in */}
-        {!user && <Route path="*" element={<Login />} />}
+        <Route path="/login" element={!user ? <Login /> : <Navigate to="/" replace />} />
+        <Route path="/register" element={!user ? <Register /> : <Navigate to="/" replace />} />
+        <Route path="/*" element={<ProtectedApp />} />
       </Routes>
     </Router>
   );

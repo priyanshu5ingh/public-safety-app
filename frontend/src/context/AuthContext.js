@@ -9,13 +9,16 @@ export function AuthProvider({ children }) {
   });
 
   const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
+    if (userData) {
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
   };
 
   return (
