@@ -17,6 +17,16 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Helper to promisify db.run
+function runAsync(sql, params) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err);
+      else resolve(this); // 'this' contains lastID, changes, etc.
+    });
+  });
+}
+
 // Registration route
 router.post('/register', async (req, res) => {
   try {
@@ -28,10 +38,16 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await db.get(
-      'SELECT * FROM users WHERE email = ? OR username = ?',
-      [email, username]
-    );
+    const existingUser = await new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM users WHERE email = ? OR username = ?',
+        [email, username],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
 
     if (existingUser) {
       return res.status(400).json({ 
@@ -44,19 +60,20 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insert new user
-    const result = await db.run(
+    console.log('Attempting to insert user:', email, username);
+    const insertResult = await runAsync(
       'INSERT INTO users (email, username, password, name, phone) VALUES (?, ?, ?, ?, ?)',
       [email, username, hashedPassword, name, phone]
     );
+    console.log('Insert result:', insertResult);
 
     res.json({ 
       message: 'User registered successfully',
-      userId: result.lastID 
+      userId: insertResult.lastID 
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ error: 'Server error during registration' });
+    res.status(500).json({ error: error.message || 'Server error during registration' });
   }
 });
 
