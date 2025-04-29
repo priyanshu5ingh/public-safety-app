@@ -1,58 +1,133 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import axios from "axios";
-import { MapPinIcon, ExclamationTriangleIcon, ShieldCheckIcon } from "@heroicons/react/24/outline";
+import { MapPinIcon, ExclamationTriangleIcon, ChartBarIcon } from "@heroicons/react/24/outline";
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
 
-const mapContainerStyle = {
-  width: "100%",
-  height: "100%",
-  borderRadius: "0.75rem"
+// Fix for default marker icons in Leaflet with webpack
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png'),
+  iconUrl: require('leaflet/dist/images/marker-icon.png'),
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
+});
+
+// Custom marker icons for different crime types
+const crimeIcons = {
+  Theft: new L.Icon({
+    iconUrl: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/circle-dollar-to-slot.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    shadowSize: [41, 41]
+  }),
+  Assault: new L.Icon({
+    iconUrl: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/hand-fist.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    shadowSize: [41, 41]
+  }),
+  Burglary: new L.Icon({
+    iconUrl: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/house-crack.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    shadowSize: [41, 41]
+  }),
+  Vandalism: new L.Icon({
+    iconUrl: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/spray-can.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    shadowSize: [41, 41]
+  }),
+  Fraud: new L.Icon({
+    iconUrl: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/user-secret.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    shadowSize: [41, 41]
+  }),
+  Other: new L.Icon({
+    iconUrl: 'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/svgs/solid/location-dot.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+    shadowSize: [41, 41]
+  })
 };
 
 const center = {
   lat: 12.9716,
-  lng: 77.5946,
+  lng: 77.5946
 };
 
-const options = {
-  disableDefaultUI: false,
-  zoomControl: true,
-  mapTypeControl: true,
-  streetViewControl: false,
-  styles: [
-    {
-      featureType: "poi",
-      elementType: "labels",
-      stylers: [{ visibility: "off" }],
-    },
-  ],
-};
+// Add this CSS at the top of the file after imports
+const scrollbarStyles = `
+  /* For Webkit browsers like Chrome/Safari */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 20px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* For Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+`;
 
 export default function CrimeMap() {
   const [reports, setReports] = useState([]);
   const [filter, setFilter] = useState("");
-  const [selectedMarker, setSelectedMarker] = useState(null);
-  const [map, setMap] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY
+  const [statistics, setStatistics] = useState({
+    total: 0,
+    byType: {},
+    recentReports: []
   });
-
-  const onLoad = useCallback(function callback(map) {
-    setMap(map);
-  }, []);
-
-  const onUnmount = useCallback(function callback(map) {
-    setMap(null);
-  }, []);
 
   useEffect(() => {
     const fetchReports = async () => {
       try {
         const res = await axios.get("http://localhost:5000/api/crime");
         setReports(res.data);
+        
+        // Calculate statistics
+        const stats = {
+          total: res.data.length,
+          byType: {},
+          recentReports: [...res.data]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, 5)
+        };
+        
+        res.data.forEach(report => {
+          stats.byType[report.crimeType] = (stats.byType[report.crimeType] || 0) + 1;
+        });
+        
+        setStatistics(stats);
       } catch (error) {
         console.error("Error fetching reports:", error);
       } finally {
@@ -66,163 +141,190 @@ export default function CrimeMap() {
     ? reports.filter((r) => r.crimeType === filter)
     : reports;
 
-  if (isLoading || !isLoaded) {
+  const safetyTips = [
+    "Stay aware of your surroundings at all times",
+    "Keep your valuables secure and out of sight",
+    "Walk in well-lit areas during night time",
+    "Save emergency contact numbers on speed dial",
+    "Travel in groups when possible",
+    "Share your location with trusted contacts",
+    "Report suspicious activities immediately",
+    "Keep your doors and windows locked"
+  ];
+
+  const crimeMarkings = [
+    { type: "Theft", color: "yellow", description: "Incidents of theft and robbery" },
+    { type: "Assault", color: "red", description: "Physical assault cases" },
+    { type: "Burglary", color: "orange", description: "Break-ins and burglaries" },
+    { type: "Vandalism", color: "blue", description: "Property damage and vandalism" },
+    { type: "Fraud", color: "green", description: "Scams and fraudulent activities" },
+    { type: "Other", color: "violet", description: "Other reported incidents" }
+  ];
+
+  if (isLoading) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-700">
         <div className="bg-white/20 backdrop-blur-sm p-8 rounded-lg flex flex-col items-center">
           <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-white text-lg">Loading map data...</p>
+          <p className="text-white text-lg">Loading crime reports...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-700 flex items-center justify-center">
-      <div className="w-full max-w-7xl h-[90vh] mx-auto flex gap-4">
-        <div className="flex-1 bg-white/30 backdrop-blur-sm rounded-xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-3 border-b border-white/20">
-            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-              <MapPinIcon className="h-5 w-5 text-white" /> Crime Map
-            </h2>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="bg-white/30 border border-white/30 text-white px-3 py-1 rounded-lg text-sm focus:ring-2 focus:ring-white/50 focus:border-transparent outline-none"
-            >
-              <option value="">All Types</option>
-              <option value="Theft">Theft</option>
-              <option value="Assault">Assault</option>
-              <option value="Burglary">Burglary</option>
-              <option value="Vandalism">Vandalism</option>
-              <option value="Fraud">Fraud</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div className="h-[calc(90vh-4rem)]">
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              zoom={12}
-              center={center}
-              options={options}
-              onLoad={onLoad}
-              onUnmount={onUnmount}
-            >
-              {filteredReports.map((report) => (
-                <Marker
-                  key={report.id}
-                  position={{ lat: report.latitude, lng: report.longitude }}
-                  onClick={() => setSelectedMarker(report)}
-                  icon={{
-                    url: `https://maps.google.com/mapfiles/ms/icons/${
-                      report.crimeType === "Theft"
-                        ? "yellow"
-                        : report.crimeType === "Assault"
-                        ? "red"
-                        : report.crimeType === "Burglary"
-                        ? "pink"
-                        : report.crimeType === "Vandalism"
-                        ? "blue"
-                        : report.crimeType === "Fraud"
-                        ? "green"
-                        : "purple"
-                    }-dot.png`
+    <>
+      <style>{scrollbarStyles}</style>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-700 p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-4 gap-4">
+            {/* Main Map Section - Takes up 3 columns */}
+            <div className="col-span-3 bg-white/30 backdrop-blur-sm rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-white">Crime Map</h2>
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="px-4 py-2 bg-white/20 border border-white/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/50 appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 0.5rem center',
+                    backgroundSize: '1.5em 1.5em',
+                    paddingRight: '2.5rem'
                   }}
-                />
-              ))}
-              
-              {selectedMarker && (
-                <InfoWindow
-                  position={{ lat: selectedMarker.latitude, lng: selectedMarker.longitude }}
-                  onCloseClick={() => setSelectedMarker(null)}
                 >
-                  <div className="p-3 min-w-[250px]">
-                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-bold mb-2 ${
-                      selectedMarker.crimeType === "Theft"
-                        ? "bg-yellow-200/90 text-yellow-900"
-                        : selectedMarker.crimeType === "Assault"
-                        ? "bg-red-200/90 text-red-900"
-                        : selectedMarker.crimeType === "Burglary"
-                        ? "bg-pink-200/90 text-pink-900"
-                        : selectedMarker.crimeType === "Vandalism"
-                        ? "bg-blue-200/90 text-blue-900"
-                        : selectedMarker.crimeType === "Fraud"
-                        ? "bg-green-200/90 text-green-900"
-                        : "bg-gray-200/90 text-gray-900"
-                    }`}>
-                      {selectedMarker.crimeType}
-                    </span>
-                    <h3 className="font-bold text-sm mb-2">{selectedMarker.locationName}</h3>
-                    <p className="text-sm text-gray-700 mb-2">{selectedMarker.description}</p>
-                    <div className="text-xs space-y-1">
-                      <p className="text-gray-500">
-                        {new Date(selectedMarker.timestamp).toLocaleString()}
-                      </p>
-                      {selectedMarker.shareIdentity && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded-md">
-                          <p className="text-blue-800 font-medium">Contact Information:</p>
-                          <p className="text-blue-600">{selectedMarker.victimName}</p>
-                          <p className="text-blue-600">{selectedMarker.contactNumber}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </InfoWindow>
-              )}
-            </GoogleMap>
-          </div>
-        </div>
+                  <option value="" className="bg-indigo-900 text-white">All Types</option>
+                  <option value="Theft" className="bg-indigo-900 text-white">Theft</option>
+                  <option value="Assault" className="bg-indigo-900 text-white">Assault</option>
+                  <option value="Burglary" className="bg-indigo-900 text-white">Burglary</option>
+                  <option value="Vandalism" className="bg-indigo-900 text-white">Vandalism</option>
+                  <option value="Fraud" className="bg-indigo-900 text-white">Fraud</option>
+                  <option value="Other" className="bg-indigo-900 text-white">Other</option>
+                </select>
+              </div>
 
-        <div className="w-72 bg-white/30 backdrop-blur-sm rounded-xl p-4 space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-1.5">
-              <ExclamationTriangleIcon className="h-5 w-5 text-red-300" /> Legend
-            </h3>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-red-400 rounded-full"></span>
-                <span className="text-sm text-white">High Risk</span>
+              <div className="h-[calc(100vh-8rem)] rounded-lg overflow-hidden">
+                <MapContainer
+                  center={center}
+                  zoom={12}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                  />
+                  {filteredReports.map((report) => (
+                    <Marker
+                      key={report.id}
+                      position={[report.latitude, report.longitude]}
+                      icon={crimeIcons[report.crimeType] || crimeIcons.Other}
+                      eventHandlers={{
+                        click: () => setSelectedReport(report)
+                      }}
+                    >
+                      <Popup>
+                        <div className="p-2">
+                          <h3 className="font-bold text-lg mb-2">{report.crimeType}</h3>
+                          <p className="text-sm mb-2">{report.description}</p>
+                          <p className="text-xs text-gray-600">
+                            {new Date(report.timestamp).toLocaleString()}
+                          </p>
+                          {report.evidence_images && report.evidence_images.length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-sm font-semibold mb-1">Evidence:</p>
+                              <div className="grid grid-cols-2 gap-1">
+                                {report.evidence_images.map((image, index) => (
+                                  <img
+                                    key={index}
+                                    src={`http://localhost:5000/api/crime/evidence/${image}`}
+                                    alt={`Evidence ${index + 1}`}
+                                    className="w-full h-20 object-cover rounded"
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-orange-400 rounded-full"></span>
-                <span className="text-sm text-white">Medium Risk</span>
+            </div>
+
+            {/* Right Side Panel - Takes up 1 column */}
+            <div className="col-span-1 space-y-4 max-h-[calc(100vh-2rem)] overflow-y-auto custom-scrollbar">
+              {/* Crime Statistics */}
+              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-4">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <ChartBarIcon className="h-5 w-5" />
+                  Crime Statistics
+                </h3>
+                <div className="space-y-3">
+                  <div className="text-white">
+                    <p className="text-sm font-medium">Total Reports</p>
+                    <p className="text-2xl font-bold">{statistics.total}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white">By Type:</p>
+                    {Object.entries(statistics.byType).map(([type, count]) => (
+                      <div key={type} className="flex justify-between text-white/90 text-sm">
+                        <span>{type}</span>
+                        <span className="font-medium">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-white">Recent Reports:</p>
+                    {statistics.recentReports.map((report, index) => (
+                      <div key={index} className="text-white/90 text-sm p-2 bg-white/10 rounded">
+                        <p className="font-medium">{report.crimeType}</p>
+                        <p className="text-xs truncate">{report.description}</p>
+                        <p className="text-xs opacity-75">
+                          {new Date(report.timestamp).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 bg-green-400 rounded-full"></span>
-                <span className="text-sm text-white">Low Risk</span>
+
+              {/* Crime Markings Legend */}
+              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-4">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <MapPinIcon className="h-5 w-5" />
+                  Crime Markings
+                </h3>
+                <div className="space-y-3">
+                  {crimeMarkings.map((crime) => (
+                    <div key={crime.type} className="flex items-start gap-2">
+                      <div className={`w-6 h-6 rounded-full bg-${crime.color}-500 flex-shrink-0 mt-1`}></div>
+                      <div>
+                        <p className="text-white font-medium">{crime.type}</p>
+                        <p className="text-white/80 text-sm">{crime.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Safety Tips */}
+              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-4">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <ExclamationTriangleIcon className="h-5 w-5" />
+                  Safety Tips
+                </h3>
+                <ul className="list-disc list-inside space-y-2">
+                  {safetyTips.map((tip, index) => (
+                    <li key={index} className="text-white text-sm">{tip}</li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-1.5">
-              <ShieldCheckIcon className="h-5 w-5 text-green-300" /> Safety Tips
-            </h3>
-            <ul className="space-y-2 text-sm text-white">
-              <li className="flex items-start gap-2">
-                <span className="text-green-300 mt-1">•</span>
-                <span>Avoid isolated areas after dark</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-300 mt-1">•</span>
-                <span>Keep valuables secure and out of sight</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-300 mt-1">•</span>
-                <span>Stay in well-lit areas</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-300 mt-1">•</span>
-                <span>Be aware of surroundings</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-300 mt-1">•</span>
-                <span>Report suspicious activities</span>
-              </li>
-            </ul>
-          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
