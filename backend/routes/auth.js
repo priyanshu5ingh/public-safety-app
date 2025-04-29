@@ -19,89 +19,44 @@ const upload = multer({ storage });
 
 // Registration route
 router.post('/register', async (req, res) => {
-  const { email, username, password, name, phone } = req.body;
-
-  // Validate required fields
-  if (!email || !username || !password || !name) {
-    return res.status(400).json({
-      success: false,
-      message: 'Please provide all required fields: email, username, password, and name'
-    });
-  }
-
   try {
-    // Check if email already exists
-    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, row) => {
-      if (err) {
-        console.error('Database error:', err);
-        return res.status(500).json({
-          success: false,
-          message: 'Registration failed. Please try again.'
-        });
-      }
+    const { email, username, password, name, phone } = req.body;
 
-      if (row) {
-        return res.status(400).json({
-          success: false,
-          message: 'Email already registered'
-        });
-      }
+    // Check if all required fields are present
+    if (!email || !username || !password || !name || !phone) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
 
-      // Check if username already exists
-      db.get('SELECT * FROM users WHERE username = ?', [username], async (err, row) => {
-        if (err) {
-          console.error('Database error:', err);
-          return res.status(500).json({
-            success: false,
-            message: 'Registration failed. Please try again.'
-          });
-        }
+    // Check if user already exists
+    const existingUser = await db.get(
+      'SELECT * FROM users WHERE email = ? OR username = ?',
+      [email, username]
+    );
 
-        if (row) {
-          return res.status(400).json({
-            success: false,
-            message: 'Username already taken'
-          });
-        }
-
-        try {
-          // Hash password
-          const hashedPassword = await bcrypt.hash(password, 10);
-
-          // Insert new user
-          db.run(
-            'INSERT INTO users (email, username, password, name, phone) VALUES (?, ?, ?, ?, ?)',
-            [email, username, hashedPassword, name, phone || null],
-            function(err) {
-              if (err) {
-                console.error('Database error:', err);
-                return res.status(500).json({
-                  success: false,
-                  message: 'Registration failed. Please try again.'
-                });
-              }
-
-              res.json({
-                success: true,
-                message: 'Registration successful'
-              });
-            }
-          );
-        } catch (error) {
-          console.error('Registration error:', error);
-          res.status(500).json({
-            success: false,
-            message: 'Registration failed. Please try again.'
-          });
-        }
+    if (existingUser) {
+      return res.status(400).json({ 
+        error: existingUser.email === email 
+          ? 'Email already registered' 
+          : 'Username already taken' 
       });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new user
+    const result = await db.run(
+      'INSERT INTO users (email, username, password, name, phone) VALUES (?, ?, ?, ?, ?)',
+      [email, username, hashedPassword, name, phone]
+    );
+
+    res.json({ 
+      message: 'User registered successfully',
+      userId: result.lastID 
     });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Registration failed. Please try again.'
-    });
+    res.status(500).json({ error: 'Server error during registration' });
   }
 });
 
