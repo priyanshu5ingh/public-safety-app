@@ -1,7 +1,7 @@
 # 🚨 NammaSuraksha - Crime Safety Analytics Platform
 
 <div align="center">
-  <a href="https://logomakerr.ai/logo/1234528" style="height:100px;width:100px">
+  <img src="https://logomakerr.ai/logo/1234528" alt="HTML5" style="width:128px;height:128px">
 </div>
 
 ## 📝 Problem Statement
