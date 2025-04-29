@@ -1,7 +1,7 @@
 # 🚨 NammaSuraksha - Crime Safety Analytics Platform
 
 <div align="center">
-  <a href="blob:https://www.remove.bg/6503d860-6b5d-4f97-a95a-5e535322f26e">
+  <img src="https://www.remove.bg/main.png" alt="NammaSuraksha logo>
 </div>
 
 ## 📝 Problem Statement
