@@ -1,6 +1,8 @@
 # 🚨 NammaSuraksha - Crime Safety Analytics Platform
 
-![NammaSuraksha Logo](assets/namma-suraksha-logo.jpeg)
+<div align="center">
+  <img src="WhatsApp Image 2025-04-28 at 4.56.24 PM.jpeg" alt="NammaSuraksha Logo" width="200"/>
+</div>
 
 ## 📝 Problem Statement
 
