@@ -1,23 +1,27 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// CORS configuration
-app.use(cors({
-    origin: 'http://localhost:3000',
-    credentials: true
-}));
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/roadsafety')
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Body parsing middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.json());
 
 // Debug middleware
 app.use((req, res, next) => {
@@ -28,9 +32,15 @@ app.use((req, res, next) => {
 // Routes
 const authRouter = require('./routes/auth');
 const crimeRouter = require('./routes/crime');
+const incidentRoutes = require('./routes/incidents');
+const newsRoutes = require('./routes/news');
+const userRoutes = require('./routes/users');
 
 app.use('/auth', authRouter);
 app.use('/api/crime', crimeRouter);
+app.use('/api/incidents', incidentRoutes);
+app.use('/api/news', newsRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running!');

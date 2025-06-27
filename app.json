@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "roadsafety-mobile",
+    "slug": "roadsafety-mobile",
+    "version": "1.0.0",
+    "jsEngine": "jsc",
+    "sdkVersion": "53.0.0",
+    "platforms": ["ios", "android"],
+    "orientation": "portrait",
+    "icon": "./assets/namma-suraksha-logo.jpeg",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/namma-suraksha-logo.jpeg",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "scheme": "roadsafetymobile"
+  }
+} 

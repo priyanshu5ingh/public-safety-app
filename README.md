@@ -35,6 +35,13 @@ Cities in India are growing rapidly, and with this growth comes the challenge of
 - Self-defense resources
 - Educational materials
 
+## 🚧 What Needs Work
+
+- Google sign-in button is present but not functional (needs Expo AuthSession setup)
+- Mapbox integration is not Expo Go compatible; using `react-native-maps`
+- Some UI/UX improvements and bug fixes
+- See [issues](https://github.com/priyanshu5ingh/public-safety-app/issues) for more
+
 ## 🛠️ Tech Stack
 
 | Layer     | Technology                  | Purpose                    |

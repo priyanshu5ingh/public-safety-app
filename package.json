@@ -1,60 +1,43 @@
 {
-  "name": "traffic-rules-app",
+  "name": "roadsafety-mobile",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@heroicons/react": "^2.1.1",
-    "@react-google-maps/api": "^2.20.6",
+    "@expo/metro-config": "^0.20.14",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-navigation/native": "^6.1.18",
+    "@react-navigation/stack": "^6.4.1",
     "axios": "^1.6.7",
-    "chart.js": "^4.4.1",
-    "dotenv": "^16.5.0",
-    "express": "^5.1.0",
-    "gsap": "^3.12.7",
-    "joi": "^17.9.2",
-    "leaflet": "^1.9.4",
-    "mongodb": "6.16",
-    "mongoose": "^8.14.0",
-    "react": "^18.2.0",
-    "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.2.0",
-    "react-leaflet": "^4.2.1",
-    "react-router-dom": "^6.22.1",
-    "react-scripts": "5.0.1",
-    "sqlite3": "^5.1.7"
+    "expo": "^53.0.11",
+    "expo-auth-session": "~6.2.0",
+    "expo-location": "~18.1.5",
+    "expo-notifications": "^0.31.3",
+    "expo-random": "^14.0.1",
+    "expo-web-browser": "^14.2.0",
+    "firebase": "^11.9.1",
+    "metro": "^0.82.4",
+    "react": "19.0.0",
+    "react-native": "0.79.4",
+    "react-native-gesture-handler": "~2.24.0",
+    "react-native-maps": "1.20.1",
+    "react-native-paper": "^5.14.5",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1",
+    "react-native-vector-icons": "^10.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.23.9",
     "@babel/preset-env": "^7.23.9",
     "@babel/preset-react": "^7.23.3",
-    "autoprefixer": "^10.4.17",
-    "babel-loader": "^9.1.3",
-    "nodemon": "^3.1.10",
-    "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.1",
-    "webpack": "^5.90.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1"
+    "@types/react": "~19.0.10",
+    "@types/react-native": "^0.73.0",
+    "@types/react-native-vector-icons": "^6.4.18",
+    "typescript": "^5.3.0"
   },
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
   }
 }
