@@ -133,8 +133,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Contact
 
 For any queries or support, please reach out to:
-- Email: [your-email@example.com]
-- Project Link: [https://github.com/yourusername/namma-suraksha]
+- Email: [priyanshusinghrajput007@gmail.com]
+- Project Link: [https://github.com/priyashu5igh/public-safety-app]
 
 ---
 
